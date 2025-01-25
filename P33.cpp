@@ -6,22 +6,34 @@
 #include <functional>
 #include <filesystem>
 #include <cmath>
+#include <random>
+#include <cstdlib>
 #include "P33_FUNC.h"
 
 using namespace std;
 namespace fs = filesystem;
 
-const string CREDENCIALES_FILEPATH = "C:\\Users\\luist\\CLionProjects\\untitled6\\credencialesP33.txt";
-const string CLASSES_FILEPATH = "C:\\Users\\luist\\CLionProjects\\untitled6\\classes.txt";
+const string userProfile = std::getenv("USERPROFILE");
+const string CREDENCIALES_FILEPATH = userProfile + "\\credencialesP33.txt";
+const string CLASSES_FILEPATH = userProfile + "\\classes.txt";
 
 void RevisionYGuardadoDeClases() {
     if (!fs::exists(CREDENCIALES_FILEPATH)) {
         ofstream file(CREDENCIALES_FILEPATH);
         if (!file) {
             cout << "Error al crear el archivo de usuarios.\n";
-            return;
+        } else {
+            cout << "Archivo de usuarios creado exitosamente.\n";
         }
-        cout << "Archivo de usuarios creado exitosamente.\n";
+    }
+
+    if (!fs::exists(CLASSES_FILEPATH)) {
+        ofstream file(CLASSES_FILEPATH);
+        if (!file) {
+            cout << "Error al crear el archivo de clases.\n";
+        } else {
+            cout << "Archivo de clases creado exitosamente.\n";
+        }
     }
 }
 
@@ -60,6 +72,29 @@ void hora() {
     cout << ctime(&time1);
 }
 
+string GenSalt(size_t length = 16) {
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    random_device rd;
+    mt19937 generator(rd());
+    uniform_int_distribution<int> distribution(0, sizeof(charset) - 2);
+
+    string salt;
+    for (size_t i = 0; i < length; i++) {
+        salt += charset[distribution(generator)];
+    }
+    return salt;
+}
+
+string HashPassword(const string& password, const string& salt) {
+    string saltedPassword = password + salt;
+    hash<string> hasher;
+    size_t hashedValue = hasher(saltedPassword);
+
+    stringstream ss;
+    ss << hex << hashedValue;
+    return ss.str();
+}
+
 void RegistrarUsuario() {
     string username, password;
     cout << "Ingrese un nombre de usuario: ";
@@ -67,12 +102,15 @@ void RegistrarUsuario() {
     cout << "Ingrese una contrasena: ";
     cin >> password;
 
+    string salt = GenSalt();
+    string hashedPassword = HashPassword(password, salt);
+
     ofstream file(CREDENCIALES_FILEPATH, ios::app);
     if (!file) {
         cout << "Error al abrir el archivo para guardar el usuario.\n";
         return;
     }
-    file << username << " " << password << endl;
+    file << username << " " << hashedPassword << " " << salt << endl;
     cout << "Usuario registrado exitosamente.\n";
 }
 
@@ -89,11 +127,11 @@ bool IniciarSesion() {
         return false;
     }
 
-    string storedUsername, storedPassword;
+    string storedUsername, storedPassword, storedSalt;
     bool found = false;
 
-    while (file >> storedUsername >> storedPassword) {
-        if (storedUsername == username && storedPassword == password) {
+    while (file >> storedUsername >> storedPassword >> storedSalt) {
+        if (storedUsername == username && storedPassword == HashPassword(password, storedSalt)) {
             cout << "Inicio de sesion exitoso.\n";
             found = true;
             break;
@@ -166,7 +204,6 @@ void AgregarClase(vector<string>& classes) {
     } while (decision == 'y');
 }
 
-
 void EliminarClase(vector<string>& classes) {
     int index;
 
@@ -201,8 +238,8 @@ void Asistencia() {
     int ClasesAusente;
 
     do {
-    cout << "Cuantas clases ha tomado? \n";
-    cin >>  ClasesTotal;
+        cout << "Cuantas clases ha tomado? \n";
+        cin >>  ClasesTotal;
     }
     while (ClasesTotal < 0);
 
@@ -229,8 +266,8 @@ void Promedio(const vector<string>& classes) {
     int NotaMaxima;
 
     do {
-    cout << "Ingrese la nota maxima en su institucion \n";
-    cin >> NotaMaxima ; } while (NotaMaxima <= 0);
+        cout << "Ingrese la nota maxima en su institucion \n";
+        cin >> NotaMaxima ; } while (NotaMaxima <= 0);
 
     cout << "Ingrese sus calificaciones:\n";
 
@@ -252,7 +289,6 @@ void Promedio(const vector<string>& classes) {
     NotaPromedio /= notas.size();
 
     cout << "Promedio: " << NotaPromedio << endl;
-
 }
 
 void HoraHastaSalida() {
@@ -274,7 +310,6 @@ void HoraHastaSalida() {
         cout << "Ingrese su minuto de salida: ";
         cin >> MinutosElegidos;
     } while (MinutosElegidos > 60 || MinutosElegidos < 0);
-
 
     Hora_Salida = *Hora_Actual;
     Hora_Salida.tm_hour = HoraElegida;
@@ -298,7 +333,6 @@ void HoraHastaSalida() {
          << minutes_left << " minutos, "
          << seconds_left_int << " segundos.\n";
 }
-
 
 void EliminarUsuario() {
     string usernameToDelete;
@@ -458,6 +492,4 @@ int main() {
         } while (opc && loggedIn);
 
     } while (!salir);
-
 }
-
