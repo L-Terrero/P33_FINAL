@@ -9,6 +9,7 @@ using namespace std;
 
 extern const string CREDENCIALES_FILEPATH;
 extern const string CLASSES_FILEPATH;
+extern const string userProfile;
 
 void RevisionYGuardadoDeClases();
 vector<string> CargarClases();
