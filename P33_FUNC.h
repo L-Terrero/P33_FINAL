@@ -23,7 +23,7 @@ void MostrarClases(const vector<string>& classes);
 void Asistencia();
 void Promedio(const vector<string>& classes);
 void HoraHastaSalida();
-void EliminarCuenta(const string& UsuarioEliminado);
+void EliminarUsuario();
 bool SwitchReset();
 
 #endif // P33_FUNC_H
